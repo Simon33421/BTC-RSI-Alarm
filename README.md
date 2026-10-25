@@ -1,1 +1,1 @@
-# BTC-RSI-Alarm
+# BTC-Alarm
