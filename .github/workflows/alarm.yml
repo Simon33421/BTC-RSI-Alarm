@@ -1,0 +1,33 @@
+name: BTC-Alarm
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # alle 5 Minuten, rund um die Uhr (oeffentliches Repository)
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Testnachricht senden?"
+        type: boolean
+        default: false
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Alarm pruefen
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ "${{ inputs.test }}" = "true" ]; then python rsi_alarm.py test; else python rsi_alarm.py; fi
+      - name: Repository aktiv halten (GitHub pausiert sonst nach 60 Tagen)
+        if: github.event_name == 'schedule'
+        run: |
+          if [ "$(date -u +%d%H)" = "0100" ]; then
+            date -u > aktiv.txt
+            git config user.name "btc-alarm"; git config user.email "btc-alarm@users.noreply.github.com"
+            git add aktiv.txt && git commit -m "aktiv" && git push || true
+          fi
