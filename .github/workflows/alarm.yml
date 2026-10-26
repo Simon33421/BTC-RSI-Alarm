@@ -6,7 +6,7 @@ on:
 
   schedule:
 
-    - cron: "*/10 * * * *"   # startet regelmaessig neu; jeder Lauf prueft 50 Minuten lang alle 2 Minuten
+    - cron: "*/10 * * * *"   # jeder Lauf prueft bis zu 110 Minuten lang alle 2 Minuten; der naechste wartet schon
 
   workflow_dispatch:
 
@@ -28,7 +28,7 @@ concurrency:
 
   group: btc-alarm-${{ inputs.test == true && 'test' || 'lauf' }}   # ein Test stoppt den laufenden Alarm nicht
 
-  cancel-in-progress: true   # ein neuer Lauf loest den alten ab -> keine Luecken, nichts doppelt
+  cancel-in-progress: false  # ein neuer Lauf wartet, bis der alte fertig ist -> keine Luecken
 
 jobs:
 
@@ -36,7 +36,7 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     steps:
 
@@ -54,9 +54,11 @@ jobs:
 
         run: |
 
-          if [ "$(date -u +%d%H)" = "0100" ]; then
+          heute="$(date -u +%Y-%m-%d)"
 
-            date -u > aktiv.txt
+          if [ "$(date -u +%d)" = "01" ] && ! grep -qs "$heute" aktiv.txt; then
+
+            echo "$heute" > aktiv.txt
 
             git config user.name "btc-alarm"; git config user.email "btc-alarm@users.noreply.github.com"
 
@@ -72,7 +74,7 @@ jobs:
 
           HC_URL: ${{ secrets.HC_URL }}
 
-          LAUFZEIT_MIN: "50"
+          LAUFZEIT_MIN: "110"
 
           PAUSE_SEK: "120"
 
